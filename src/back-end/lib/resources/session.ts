@@ -74,6 +74,9 @@ const resource: Resource = {
         return respond(401, [permissions.ERROR_MESSAGE]);
       }
       const result = await signOut(connection, request.session);
+      if(request.session){
+        request.logger.info(`User successfuly signed out.`, { userId: request.session.user.id, sessionId: request.session?.id })
+      }
       switch (result.tag) {
         case 'valid':
           return respond(200, null);

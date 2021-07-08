@@ -484,8 +484,7 @@ const ViewToasts: ComponentView<State, Msg> = ({ state, dispatch }) => {
   );
 };
 
-const navUnauthenticatedMenu = () => {
-  const { t } = useTranslation();
+const navUnauthenticatedMenu = (t: Function) => {
   const navLinks = [
     Nav.linkAccountAction({
       children: t('links.sign-in'),
@@ -522,10 +521,11 @@ const procurementConciergeLink: Nav.NavLink = {
 };
 
 function navAccountMenus(state: Immutable<State>): Nav.Props['accountMenus'] {
+  const { t } = useTranslation();
   const sessionUser = state.shared.session && state.shared.session.user;
   // Return standard sign-in/up links if user is not signed in.
   if (!sessionUser) {
-    return { mobile: navUnauthenticatedMenu(), desktop: navUnauthenticatedMenu() };
+    return { mobile: navUnauthenticatedMenu(t), desktop: navUnauthenticatedMenu(t) };
   }
   // Return separate mobile and desktop authentication menus if the user is signed in.
   const userIdentifier = sessionUser.email || sessionUser.name;

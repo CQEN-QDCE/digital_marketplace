@@ -120,7 +120,7 @@ async function makeRouter(connection: Connection): Promise<Router<any, any, any,
           }
 
           const signinCompleteLocation = redirectOnSuccess ? redirectOnSuccess : (existingUser ? prefixPath('/dashboard') : prefixPath('/sign-up/complete'));
-
+          request.logger.info(`User successfuly signed in.`, { userId: session?.user.id, sessionId: session?.id })
           return {
             code: 302,
             headers: {
