@@ -1150,8 +1150,51 @@
       "syncMode" : "IMPORT",
       "clientSecret" : "?IDIRCLIENTSECRET?"
     }
-  } ],
-  "identityProviderMappers" : [ {
+  },
+
+  {
+    "alias": "clicsequr",
+    "displayName": "ClicSEQUR Express",
+    "internalId": "649f7961-76ce-4ad9-9085-e68b36b5a9c0",
+    "providerId": "keycloak-oidc",
+    "enabled": true,
+    "updateProfileFirstLoginMode": "on",
+    "trustEmail": false,
+    "storeToken": false,
+    "addReadTokenRoleOnCreate": false,
+    "authenticateByDefault": false,
+    "linkOnly": false,
+    "firstBrokerLoginFlowAlias": "first broker login",
+    "config": {
+      "userInfoUrl": "?KEYCLOAKURL?/auth/realms/clicsequr/protocol/openid-connect/userinfo",
+      "validateSignature": "true",
+      "clientId": "marketplace-idp",
+      "tokenUrl": "?KEYCLOAKURL?/auth/realms/clicsequr/protocol/openid-connect/token",
+      "jwksUrl": "?KEYCLOAKURL?/auth/realms/clicsequr/protocol/openid-connect/certs",
+      "backchannelSupported": "true",
+      "issuer": "?KEYCLOAKURL?/auth/realms/clicsequr",
+      "useJwksUrl": "true",
+      "authorizationUrl": "?KEYCLOAKURL?/auth/realms/clicsequr/protocol/openid-connect/auth",
+      "clientAuthMethod": "client_secret_post",
+      "logoutUrl": "?KEYCLOAKURL?/auth/realms/clicsequr/protocol/openid-connect/logout",
+      "syncMode": "IMPORT",
+      "clientSecret" : "?VENDORCLIENTSECRET?"
+    }
+  }
+],
+"identityProviderMappers": [
+  {
+    "id": "c532fd8f-d8a7-4a74-8987-7f5cce002f0b",
+    "name": "idp-alias",
+    "identityProviderAlias": "clicsequr",
+    "identityProviderMapper": "hardcoded-attribute-idp-mapper",
+    "config": {
+      "attribute.value": "CLICSEQUR",
+      "syncMode": "INHERIT",
+      "attribute": "loginSource"
+    }
+  },
+  {
     "id" : "72c94b23-feee-4ac7-ada5-f79ea15b87e1",
     "name" : "idp-alias",
     "identityProviderAlias" : "idir",

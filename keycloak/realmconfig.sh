@@ -8,76 +8,88 @@ IFS=$'\n'
 #Test your custom vars here:
 
 #?ROOTURL?
-if [ ! "$1" ];
-then read -p "Root Url: " ROOTURL
-else ROOTURL=$1
+if [ ! "$1" ]; then
+  read -rp "Root Url: " ROOTURL
+else
+  ROOTURL=$1
 fi
 
 #?GITHUBID?
-if [ ! "$2" ];
-then read -p "Github Client ID: " GITHUBID
-else GITHUBID=$2
+if [ ! "$2" ]; then
+  read -rp "Github Client ID: " GITHUBID
+else
+  GITHUBID=$2
 fi
 
 #?GITHUBSECRET?
-if [ ! "$3" ];
-then read -p "Github Client Secret: " GITHUBSECRET
-else GITHUBSECRET=$3
+if [ ! "$3" ]; then
+  read -rp "Github Client Secret: " GITHUBSECRET
+else
+  GITHUBSECRET=$3
 fi
 
 #?KEYCLOAKURL?
-if [ ! "$4" ];
-then read -p "Keycloak Url: " KEYCLOAKURL
-else KEYCLOAKURL=$4
+if [ ! "$4" ]; then
+  read -rp "Keycloak Url: " KEYCLOAKURL
+else
+  KEYCLOAKURL=$4
 fi
 
 #Add generated or constant Custom vars
 
 #?IDIRCLIENTSECRET?
 IDIRCLIENTSECRET="$(uuidgen)"
+VENDORCLIENTSECRET="$(uuidgen)"
 
 for REALMFILE in realms/*.template.json; do
-    PRODREALMFILE="${REALMFILE%%.*}.json"
+  PRODREALMFILE="${REALMFILE%%.*}.json"
 
-    while read -r LINE || [ -n "$LINE" ]; do
-        
-        #Secret Regeneration
-        #?UUID?
-        if [[ $LINE == *"?UUID?"* ]]; then
-            LINE=${LINE//\?UUID\?/"$(uuidgen)"}
-        fi
+  echo "GENERATING $PRODREALMFILE ..."
 
-        #Add your custom vars swap here:
+  while read -r LINE || [ -n "$LINE" ]; do
 
-        #?ROOTURL?
-        if [[ $LINE == *"?ROOTURL?"* ]]; then
-            LINE=${LINE//\?ROOTURL\?/"${ROOTURL}"}
-        fi
+    #Secret Regeneration
+    #?UUID?
+    if [[ $LINE == *"?UUID?"* ]]; then
+      LINE=${LINE//\?UUID\?/"$(uuidgen)"}
+    fi
 
-        #?GITHUBID?
-        if [[ $LINE == *"?GITHUBID?"* ]]; then
-            LINE=${LINE//\?GITHUBID\?/"${GITHUBID}"}
-        fi
+    #Add your custom vars swap here:
 
-        #?GITHUBSECRET?
-        if [[ $LINE == *"?GITHUBSECRET?"* ]]; then
-            LINE=${LINE//\?GITHUBSECRET\?/"${GITHUBSECRET}"}
-        fi
+    #?ROOTURL?
+    if [[ $LINE == *"?ROOTURL?"* ]]; then
+      LINE=${LINE//\?ROOTURL\?/"${ROOTURL}"}
+    fi
 
-        #?KEYCLOAKURL?
-        if [[ $LINE == *"?KEYCLOAKURL?"* ]]; then
-            LINE=${LINE//\?KEYCLOAKURL\?/"${KEYCLOAKURL}"}
-        fi
+    #?GITHUBID?
+    if [[ $LINE == *"?GITHUBID?"* ]]; then
+      LINE=${LINE//\?GITHUBID\?/"${GITHUBID}"}
+    fi
 
-        #?IDIRCLIENTSECRET?
-        if [[ $LINE == *"?IDIRCLIENTSECRET?"* ]]; then
-            LINE=${LINE//\?IDIRCLIENTSECRET\?/"${IDIRCLIENTSECRET}"}
-        fi
+    #?GITHUBSECRET?
+    if [[ $LINE == *"?GITHUBSECRET?"* ]]; then
+      LINE=${LINE//\?GITHUBSECRET\?/"${GITHUBSECRET}"}
+    fi
 
-        echo $LINE
-    done < "${REALMFILE}" > "${PRODREALMFILE}"
+    #?KEYCLOAKURL?
+    if [[ $LINE == *"?KEYCLOAKURL?"* ]]; then
+      LINE=${LINE//\?KEYCLOAKURL\?/"${KEYCLOAKURL}"}
+    fi
 
-    rm "${REALMFILE}"
+    #?IDIRCLIENTSECRET?
+    if [[ $LINE == *"?IDIRCLIENTSECRET?"* ]]; then
+      LINE=${LINE//\?IDIRCLIENTSECRET\?/"${IDIRCLIENTSECRET}"}
+    fi
+
+    #?VENDORCLIENTSECRET?
+    if [[ $LINE == *"?VENDORCLIENTSECRET?"* ]]; then
+      LINE=${LINE//\?VENDORCLIENTSECRET\?/"${VENDORCLIENTSECRET}"}
+    fi
+
+    echo "$LINE"
+  done <"${REALMFILE}" >"${PRODREALMFILE}"
+
+  rm "${REALMFILE}"
 done
 
 # Reset IFS

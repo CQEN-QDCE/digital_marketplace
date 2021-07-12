@@ -6,16 +6,17 @@ const NODE_ENV = process.env.NODE_ENV === "development" ? "development" : "produ
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "digitalmarketplace@gov.bc.ca";
 const PATH_PREFIX = process.env.PATH_PREFIX || "";
 const {
-  VENDOR_ACCOUNT_CREATION_DISABLED, 
-  SHOW_TEST_INDICATOR,
+  CWU_MAX_BUDGET,
+  DEFAULT_PAGE_SIZE,
   GOV_IDP_SUFFIX,
   GOV_IDP_NAME,
   PROVINCIAL_IDP_NAME,
-  VENDOR_IDP_SUFFIX,
-  TIMEZONE,
-  CWU_MAX_BUDGET,
+  SHOW_TEST_INDICATOR,
   SWU_MAX_BUDGET,
-  DEFAULT_PAGE_SIZE,
+  TIMEZONE,
+  VENDOR_ACCOUNT_CREATION_DISABLED, 
+  VENDOR_IDP_SUFFIX,
+  VENDOR_IDP_NAME,
 } = process.env;
 const srcFrontEnd = path.resolve(__dirname, "./src/front-end");
 const srcBackEnd = path.resolve(__dirname, "./src/back-end");
@@ -60,6 +61,7 @@ global.gruntConfig = {
       CWU_MAX_BUDGET,
       SWU_MAX_BUDGET,
       DEFAULT_PAGE_SIZE,
+      VENDOR_IDP_NAME,
     }
   },
   backEnd: {
