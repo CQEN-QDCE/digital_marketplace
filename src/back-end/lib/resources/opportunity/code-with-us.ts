@@ -1,5 +1,8 @@
+import { ENV } from 'back-end/config';
 import * as crud from 'back-end/lib/crud';
 import * as db from 'back-end/lib/db';
+import { makeDomainLogger } from 'back-end/lib/logger';
+import { console as consoleAdapter } from 'back-end/lib/logger/adapters';
 import * as cwuOpportunityNotifications from 'back-end/lib/mailer/notifications/opportunity/code-with-us';
 import * as permissions from 'back-end/lib/permissions';
 import { basicResponse, JsonResponseBody, makeJsonResponseBody, nullRequestBodyHandler, wrapRespond } from 'back-end/lib/server';
@@ -9,10 +12,12 @@ import { get, omit } from 'lodash';
 import { addDays, getNumber, getString, getStringArray } from 'shared/lib';
 import { FileRecord } from 'shared/lib/resources/file';
 import { CreateCWUOpportunityStatus, CreateRequestBody, CreateValidationErrors, CWUOpportunity, CWUOpportunitySlim, CWUOpportunityStatus, DeleteValidationErrors, isValidStatusChange, UpdateEditRequestBody, UpdateRequestBody, UpdateValidationErrors } from 'shared/lib/resources/opportunity/code-with-us';
-import { AuthenticatedSession, Session } from 'shared/lib/resources/session';
+import { AuthenticatedSession, Session, SessionRecord } from 'shared/lib/resources/session';
 import { adt, ADT, Id } from 'shared/lib/types';
 import { allValid, getInvalidValue, getValidValue, invalid, isInvalid, isValid, mapValid, valid, validateUUID, Validation } from 'shared/lib/validation';
 import * as opportunityValidation from 'shared/lib/validation/opportunity/code-with-us';
+
+const logger = makeDomainLogger(consoleAdapter, 'CWU', ENV);
 
 export interface ValidatedCreateRequestBody extends Omit<CWUOpportunity, 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy' | 'id' | 'addenda'> {
   status: CreateCWUOpportunityStatus;
@@ -539,6 +544,7 @@ const resource: Resource = {
           switch (body.tag) {
             case 'edit':
               dbResult = await db.updateCWUOpportunityVersion(connection, { ...body.value, id: request.params.id }, session);
+              logCWUOpportunityChange('CWU updated', dbResult.value as CWUOpportunity, session)
               // Notify all subscribed users on the opportunity of the update (only if not draft)
               if (isValid(dbResult) && dbResult.value.status !== CWUOpportunityStatus.Draft) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);
@@ -547,6 +553,7 @@ const resource: Resource = {
             case 'publish':
               const existingOpportunity = getValidValue(await db.readOneCWUOpportunity(connection, request.params.id, session), null);
               dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Published, body.value, session);
+              logCWUOpportunityChange('CWU published', dbResult.value as CWUOpportunity, session)
               // Notify subscribers of publication
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUPublished(connection, dbResult.value, existingOpportunity?.status === CWUOpportunityStatus.Suspended);
@@ -554,9 +561,11 @@ const resource: Resource = {
               break;
             case 'startEvaluation':
               dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Evaluation, body.value, session);
+              logCWUOpportunityChange('CWU evaluation started', dbResult.value as CWUOpportunity, session)
               break;
             case 'suspend':
               dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Suspended, body.value, session);
+              logCWUOpportunityChange('CWU suspended', dbResult.value as CWUOpportunity, session)
               // Notify subscribers of suspension
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUSuspended(connection, dbResult.value);
@@ -564,6 +573,7 @@ const resource: Resource = {
               break;
             case 'cancel':
               dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Canceled, body.value, session);
+              logCWUOpportunityChange('CWU cancelled', dbResult.value as CWUOpportunity, session)
               // Notify subscribers of cancellation
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUCancelled(connection, dbResult.value);
@@ -571,6 +581,7 @@ const resource: Resource = {
               break;
             case 'addAddendum':
               dbResult = await db.addCWUOpportunityAddendum(connection, request.params.id, body.value, session);
+              logCWUOpportunityChange('CWU addendum added', dbResult.value as CWUOpportunity, session, { addendum: body.value })
               // Notify all subscribed users on the opportunity of the update
               if (isValid(dbResult)) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);
@@ -621,5 +632,11 @@ const resource: Resource = {
     };
   }
 };
+
+function logCWUOpportunityChange(title: string, opportunity: CWUOpportunity, session: SessionRecord, extraData?: Object) {
+  const { history, ...opportunityData } = opportunity;
+  logger.info(title, {...opportunityData, ...extraData, changedBy: session.user.id });
+}
+
 
 export default resource;

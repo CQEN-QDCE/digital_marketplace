@@ -300,7 +300,7 @@ export const readOneCWUOpportunity = tryDb<[Id, Session], CWUOpportunity | null>
         result.reporting = {
           numViews,
           numWatchers,
-          numProposals
+          numProposals: numProposals as number
         };
       }
     }
