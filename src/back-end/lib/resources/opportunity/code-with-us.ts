@@ -353,6 +353,7 @@ const resource: Resource = {
 
             // Attachments must be validated for both drafts and published opportunities.
             const validatedAttachments = await validateAttachments(connection, attachments);
+            console.log(validatedAttachments)
             if (isInvalid(validatedAttachments)) {
               return invalid({
                 opportunity: adt('edit' as const, {
@@ -581,7 +582,7 @@ const resource: Resource = {
               break;
             case 'addAddendum':
               dbResult = await db.addCWUOpportunityAddendum(connection, request.params.id, body.value, session);
-              logCWUOpportunityChange('CWU addendum added', dbResult.value as CWUOpportunity, session, { addendum: body.value })
+              logCWUOpportunityChange('CWU addendum added', dbResult.value as CWUOpportunity, session)
               // Notify all subscribed users on the opportunity of the update
               if (isValid(dbResult)) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);
@@ -633,9 +634,9 @@ const resource: Resource = {
   }
 };
 
-function logCWUOpportunityChange(title: string, opportunity: CWUOpportunity, session: SessionRecord, extraData?: Object) {
+function logCWUOpportunityChange(title: string, opportunity: CWUOpportunity, session: SessionRecord) {
   const { history, ...opportunityData } = opportunity;
-  logger.info(title, {...opportunityData, ...extraData, changedBy: session.user.id });
+  logger.info(title, {...opportunityData, changedBy: session.user.id });
 }
 
 
