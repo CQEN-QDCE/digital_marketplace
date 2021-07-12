@@ -262,6 +262,7 @@ const resource: Resource = {
           if (dbResult.value.status === CWUOpportunityStatus.Published) {
             cwuOpportunityNotifications.handleCWUPublished(connection, dbResult.value, false);
           }
+          logCWUOpportunityChange('CWU created', dbResult.value as CWUOpportunity, request.session as SessionRecord)
           return basicResponse(201, request.session, makeJsonResponseBody(dbResult.value));
         }),
         invalid: (async request => {
@@ -623,6 +624,7 @@ const resource: Resource = {
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }
+          logCWUOpportunityChange('CWU deleted', dbResult.value as CWUOpportunity, request.session as SessionRecord)
           return basicResponse(200, request.session, makeJsonResponseBody(dbResult.value));
         },
         invalid: async request => {
@@ -633,9 +635,16 @@ const resource: Resource = {
   }
 };
 
+/**
+ * Log the opportunity's changes on the console.
+ * 
+ * @param title Log title
+ * @param opportunity The touched opportunity
+ * @param session The user session
+ */
 function logCWUOpportunityChange(title: string, opportunity: CWUOpportunity, session: SessionRecord) {
   const { history, ...opportunityData } = opportunity;
-  logger.info(title, {...opportunityData, changedBy: session.user.id });
+  logger.info(title, {...opportunityData, changedBy: session.user.id, sessionId: session.id });
 }
 
 
