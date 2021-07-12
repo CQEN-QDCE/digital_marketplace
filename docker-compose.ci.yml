@@ -2,10 +2,8 @@ version: "3"
 services:
   db:
     image: postgres:10
-    ports:
-      - 5432:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
       timeout: 10s
       retries: 3
@@ -60,7 +58,7 @@ services:
       - NODE_ENV=development
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3000
-      - POSTGRESQL_SERVICE_HOST=localhost
+      - POSTGRESQL_SERVICE_HOST=db
       - POSTGRESQL_SERVICE_PORT=5432
       - TIMEZONE=Canada/Eastern
       - DATABASE_USERNAME=digitalmarketplace
@@ -84,6 +82,7 @@ services:
       - SWAGGER_UI_PATH=/swagger
       - VENDOR_ACCOUNT_CREATION_DISABLED=1
       - CI=true
+
   selenium:
     image: selenium/standalone-chrome-debug
     healthcheck:
@@ -95,6 +94,3 @@ services:
     depends_on: 
       ui:
         condition: service_healthy
-    ports:
-      - 4444:4444
-      - 5999:5900
