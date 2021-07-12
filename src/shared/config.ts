@@ -31,8 +31,6 @@ export const GOV_IDP_NAME = process.env.GOV_IDP_NAME || 'IDIR';
 export const VENDOR_IDP_SUFFIX = process.env.VENDOR_IDP_SUFFIX || 'github';
 export const VENDOR_IDP_NAME = process.env.VENDOR_IDP_NAME || 'GitHub';
 
-console.log({ VENDOR_IDP_NAME })
-
 export const TIMEZONE = process.env.TIMEZONE || 'America/Vancouver';
 
 export const CWU_MAX_BUDGET = parseInt(process.env.CWU_MAX_BUDGET || '70000',10);
