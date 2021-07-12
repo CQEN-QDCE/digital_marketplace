@@ -353,7 +353,6 @@ const resource: Resource = {
 
             // Attachments must be validated for both drafts and published opportunities.
             const validatedAttachments = await validateAttachments(connection, attachments);
-            console.log(validatedAttachments)
             if (isInvalid(validatedAttachments)) {
               return invalid({
                 opportunity: adt('edit' as const, {
