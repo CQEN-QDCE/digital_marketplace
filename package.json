@@ -18,7 +18,7 @@
     "front-end:typedoc": "npx typedoc --name 'Digital Marketplace Front-End' --tsconfig src/front-end/typescript/tsconfig.json --out typedoc/front-end src/front-end/typescript",
     "back-end:lint": "npx tslint -c tslint.json src/back-end/*.ts src/back-end/**/*.ts && echo Lint Successful\n",
     "back-end:typecheck": "npx tsc --project src/back-end --noEmit && echo Typecheck Successful\n",
-    "back-end:test": "node tests/back-end/index.js",
+    "back-end:test": "KNEX_DEBUG=true DATABASE_NAME=dm_test POSTGRESQL_SERVICE_HOST=db-test NODE_ENV=test SERVER_HOST=127.0.0.1 SERVER_PORT=8081 node tests/back-end/index.js",
     "back-end:start": "node build/back-end/back-end/start.js",
     "back-end:build": "npx grunt back-end-build",
     "back-end:watch": "npx nodemon --watch ./src/back-end --watch ./src/shared --ext ts,tsx,js,json,yaml --exec \"npx grunt back-end-build-development && npm run back-end:start\"",
@@ -120,6 +120,7 @@
     "@types/react-select": "^3.0.5",
     "@types/reactstrap": "^8.4.1",
     "@types/sha.js": "^2.4.0",
+    "@types/sinon": "^10.0.2",
     "@types/swagger-jsdoc": "^3.0.2",
     "@types/swagger-ui-express": "^4.1.2",
     "@types/wordpress__wordcount": "^2.4.0",
@@ -147,6 +148,7 @@
     "grunt-terser": "^0.1.0",
     "identity-obj-proxy": "^3.0.0",
     "is-relative-url": "^3.0.0",
+    "knex-cleaner": "^1.3.1",
     "license-checker": "^25.0.1",
     "load-grunt-tasks": "^4.0.0",
     "markdown-toc": "^1.2.0",
@@ -165,6 +167,8 @@
     "require-dir": "^1.2.0",
     "selenium-webdriver": "^4.0.0-beta.4",
     "serve": "^11.3.2",
+    "sinon": "^11.1.1",
+    "supertest": "^6.1.3",
     "tslint": "^5.12.1",
     "typedoc": "^0.15.0"
   }

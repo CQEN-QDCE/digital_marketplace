@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
     "target": "es2018",
+    "module": "commonjs",
     "moduleResolution": "node",
+    "jsx": "react",
     "allowJs": true,
-    "noEmit": true,
     "strict": true,
     "noImplicitReturns": true,
     "forceConsistentCasingInFileNames": true,
@@ -11,7 +12,9 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
+    "noErrorTruncation": true,
     "baseUrl": ".",
+    "incremental": true,
     "paths": {
       "back-end/*": ["../../src/back-end/*"],
       "shared/*": ["../../src/shared/*"]

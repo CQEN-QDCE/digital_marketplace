@@ -3,12 +3,17 @@ services:
 
   db:
     image: postgres:10
-    ports:
-      - 5432:5432
     environment:
       POSTGRES_USER: digitalmarketplace
       POSTGRES_PASSWORD: digitalmarketplace
       POSTGRES_DB: digitalmarketplace
+
+  db-test:
+    image: postgres:10
+    environment:
+      POSTGRES_USER: digitalmarketplace
+      POSTGRES_PASSWORD: digitalmarketplace
+      POSTGRES_DB: dm_test
 
   keycloak:
     image: keycloak

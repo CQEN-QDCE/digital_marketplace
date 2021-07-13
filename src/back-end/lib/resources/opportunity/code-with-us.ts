@@ -254,7 +254,7 @@ const resource: Resource = {
       },
       respond: wrapRespond<ValidatedCreateRequestBody, CreateValidationErrors, JsonResponseBody<CWUOpportunity>, JsonResponseBody<CreateValidationErrors>, Session>({
         valid: (async request => {
-          const dbResult = await db.createCWUOpportunity(connection, omit(request.body, 'session'), request.body.session);
+          const dbResult = await db.createCWUOpportunity(connection, omit(request.body, 'session'), request.body.session, logCWUOpportunityChange);
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }
@@ -262,7 +262,6 @@ const resource: Resource = {
           if (dbResult.value.status === CWUOpportunityStatus.Published) {
             cwuOpportunityNotifications.handleCWUPublished(connection, dbResult.value, false);
           }
-          logCWUOpportunityChange('CWU created', dbResult.value as CWUOpportunity, request.session as SessionRecord)
           return basicResponse(201, request.session, makeJsonResponseBody(dbResult.value));
         }),
         invalid: (async request => {

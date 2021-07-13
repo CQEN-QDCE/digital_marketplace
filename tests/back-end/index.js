@@ -1,4 +1,5 @@
 const path = require('path');
+const glob = require('glob');
 const compilerOptions = require('./tsconfig.json').compilerOptions;
 
 process.chdir(__dirname);
@@ -22,9 +23,7 @@ const mocha = new Mocha({
 });
 
 // Load all tests.
-const tests = [
-  'unit/lib/hooks/logger'
-];
+const tests = glob.sync('unit/**/*.ts');
 
 tests.forEach(t => mocha.addFile(path.join(__dirname, t)));
 

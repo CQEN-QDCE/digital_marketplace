@@ -8,7 +8,7 @@ import { User, UserSlim, UserStatus, UserType } from 'shared/lib/resources/user'
 import { Id } from 'shared/lib/types';
 import { getValidValue } from 'shared/lib/validation';
 
-type CreateUserParams = Omit<Partial<User>, 'avatarImageFile'> & { createdAt?: Date, updatedAt?: Date, avatarImageFile?: Id };
+export type CreateUserParams = Omit<Partial<User>, 'avatarImageFile'> & { createdAt?: Date, updatedAt?: Date, avatarImageFile?: Id };
 
 type UpdateUserParams = Omit<Partial<User>, 'avatarImageFile'> & { updatedAt?: Date, avatarImageFile?: Id };
 
