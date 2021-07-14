@@ -1,7 +1,7 @@
 // import assert from 'assert';
 
 import { connectToDatabase } from "back-end/index";
-import { createCWUOpportunity } from "back-end/lib/db";
+import { addCWUOpportunityAddendum, createCWUOpportunity, updateCWUOpportunityVersion } from "back-end/lib/db";
 import { CreateCWUOpportunityStatus, CWUOpportunityStatus } from "shared/lib/resources/opportunity/code-with-us";
 import { SessionRecord } from "shared/lib/resources/session";
 import { User } from "shared/lib/resources/user";
@@ -46,12 +46,21 @@ describe('Resource Code-With-Us', () => {
   describe('Changelog', () => {
     it('Logs opportunity creation', async () => {
       const logSpy = spy()
-      const f = await createCWUOpportunity(dbConnexion, opportunityTemplate, opSession, logSpy)
-      console.log({ f })
+      await createCWUOpportunity(dbConnexion, opportunityTemplate, opSession, logSpy)
       expect(logSpy.calledOnce).to.be.true
     })
-    it('Logs opportunity update')
-    it('Logs opportunity deletion')
-    it('Logs opportunity addenda')
+    it('Logs opportunity update', async () => {
+      const logSpy = spy()
+      const {status, ...opportunityUpdate} = opportunityTemplate;
+      const newOpportunity = await createCWUOpportunity(dbConnexion, opportunityTemplate, opSession)
+      await updateCWUOpportunityVersion(dbConnexion, {...opportunityUpdate, id: newOpportunity.value?.id}, opSession, logSpy)
+      expect(logSpy.calledOnce).to.be.true
+    })
+    it('Logs opportunity addenda', async () => {
+      const logSpy = spy()
+      const newOpportunity = await createCWUOpportunity(dbConnexion, opportunityTemplate, opSession)
+      await addCWUOpportunityAddendum(dbConnexion, newOpportunity.value?.id as string, 'My Addendum', opSession, logSpy)
+      expect(logSpy.calledOnce).to.be.true
+    })
   })
 })

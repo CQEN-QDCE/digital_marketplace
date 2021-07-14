@@ -367,7 +367,7 @@ export const readManyCWUOpportunities = tryDb<[Session], CWUOpportunitySlim[]>(a
   return valid(await Promise.all(results.map(async raw => await rawCWUOpportunitySlimToCWUOpportunitySlim(connection, raw))));
 });
 
-export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, AuthenticatedSession, Function], CWUOpportunity>(async (connection, opportunity, session, logCreation) => {
+export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, AuthenticatedSession, Function | undefined] | [CreateCWUOpportunityParams, AuthenticatedSession], CWUOpportunity>(async (connection, opportunity, session, logCreation?) => {
   // Create root opportunity record
   const now = new Date();
   const opportunityId = await connection.transaction(async trx => {
@@ -421,7 +421,9 @@ export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, Authentic
   if (isInvalid(dbResult) || !dbResult.value) {
     throw new Error('unable to create opportunity');
   }
-  logCreation('CWU created', dbResult.value as CWUOpportunity, session as SessionRecord)
+  if(logCreation){
+    logCreation('CWU created', dbResult.value as CWUOpportunity, session as SessionRecord)
+  }
 
   return valid(dbResult.value);
 });
@@ -453,7 +455,7 @@ export async function isCWUOpportunityAuthor(connection: Connection, user: User,
   }
 }
 
-export const updateCWUOpportunityVersion = tryDb<[UpdateCWUOpportunityParams, AuthenticatedSession], CWUOpportunity>(async (connection, opportunity, session) => {
+export const updateCWUOpportunityVersion = tryDb<[UpdateCWUOpportunityParams, AuthenticatedSession, Function], CWUOpportunity>(async (connection, opportunity, session, logCreation) => {
   const now = new Date();
   const { attachments, ...restOfOpportunity } = opportunity;
   const oppVersion = await connection.transaction(async trx => {
@@ -489,10 +491,11 @@ export const updateCWUOpportunityVersion = tryDb<[UpdateCWUOpportunityParams, Au
   if (isInvalid(dbResult) || !dbResult.value) {
     throw new Error('unable to update opportunity');
   }
+  logCreation('CWU updated', dbResult.value as CWUOpportunity, session as SessionRecord)
   return valid(dbResult.value);
 });
 
-export const updateCWUOpportunityStatus = tryDb<[Id, CWUOpportunityStatus, string, AuthenticatedSession], CWUOpportunity>(async (connection, id, status, note, session) => {
+export const updateCWUOpportunityStatus = tryDb<[Id, CWUOpportunityStatus, string, AuthenticatedSession, Function], CWUOpportunity>(async (connection, id, status, note, session, logCreation) => {
   const now = new Date();
   const [result] = await connection<RawCWUOpportunityHistoryRecord & { opportunity: Id }>('cwuOpportunityStatuses')
     .insert({
@@ -513,10 +516,11 @@ export const updateCWUOpportunityStatus = tryDb<[Id, CWUOpportunityStatus, strin
     throw new Error('unable to update opportunity');
   }
 
+  logCreation('CWU published', dbResult.value as CWUOpportunity, session as SessionRecord)
   return valid(dbResult.value);
 });
 
-export const addCWUOpportunityAddendum = tryDb<[Id, string, AuthenticatedSession], CWUOpportunity>(async (connection, id, addendumText, session) => {
+export const addCWUOpportunityAddendum = tryDb<[Id, string, AuthenticatedSession, Function], CWUOpportunity>(async (connection, id, addendumText, session, logCreation) => {
   const now = new Date();
   await connection.transaction(async trx => {
     const [addendum] = await connection<RawCWUOpportunityAddendum & { opportunity: Id }>('cwuOpportunityAddenda')
@@ -550,6 +554,7 @@ export const addCWUOpportunityAddendum = tryDb<[Id, string, AuthenticatedSession
   if (isInvalid(dbResult) || !dbResult.value) {
     throw new Error('unable to add addendum');
   }
+  logCreation('CWU addendum added', dbResult.value as CWUOpportunity, session as SessionRecord)
   return valid(dbResult.value);
 });
 

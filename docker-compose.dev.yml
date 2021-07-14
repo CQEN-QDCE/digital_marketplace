@@ -62,6 +62,8 @@ services:
       - DATABASE_USERNAME=digitalmarketplace
       - DATABASE_PASSWORD=digitalmarketplace
       - DATABASE_NAME=digitalmarketplace
+      - TEST_DATABASE_NAME=dm_test
+      - TEST_POSTGRESQL_SERVICE_HOST=db-test
       - COOKIE_SECRET=foobar
       - ORIGIN=http://localhost:3000
       - KEYCLOAK_ADMIN_USER=admin

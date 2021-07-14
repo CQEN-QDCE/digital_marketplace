@@ -1,3 +1,4 @@
+import { DB_MIGRATIONS_TABLE_NAME } from "back-end/config";
 import { connectToDatabase } from "back-end/index";
 import { generateUuid } from "back-end/lib";
 import { CreateUserParams, RawUser, rawUserToUser } from "back-end/lib/db";
@@ -54,7 +55,7 @@ var knexCleaner = require('knex-cleaner');
 
 export async function cleanupUsers() {
   await knexCleaner.clean(dbConnexion, {
-    ignoreTable: ['migrations', 'migrations_lock']
+    ignoreTables: [DB_MIGRATIONS_TABLE_NAME]
   })
   await dbConnexion<RawUser>('users').delete()
 }

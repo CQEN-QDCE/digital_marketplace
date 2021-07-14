@@ -543,8 +543,7 @@ const resource: Resource = {
           const { session, body } = request.body;
           switch (body.tag) {
             case 'edit':
-              dbResult = await db.updateCWUOpportunityVersion(connection, { ...body.value, id: request.params.id }, session);
-              logCWUOpportunityChange('CWU updated', dbResult.value as CWUOpportunity, session)
+              dbResult = await db.updateCWUOpportunityVersion(connection, { ...body.value, id: request.params.id }, session, logCWUOpportunityChange);
               // Notify all subscribed users on the opportunity of the update (only if not draft)
               if (isValid(dbResult) && dbResult.value.status !== CWUOpportunityStatus.Draft) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);
@@ -552,36 +551,31 @@ const resource: Resource = {
               break;
             case 'publish':
               const existingOpportunity = getValidValue(await db.readOneCWUOpportunity(connection, request.params.id, session), null);
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Published, body.value, session);
-              logCWUOpportunityChange('CWU published', dbResult.value as CWUOpportunity, session)
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Published, body.value, session, logCWUOpportunityChange);
               // Notify subscribers of publication
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUPublished(connection, dbResult.value, existingOpportunity?.status === CWUOpportunityStatus.Suspended);
               }
               break;
             case 'startEvaluation':
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Evaluation, body.value, session);
-              logCWUOpportunityChange('CWU evaluation started', dbResult.value as CWUOpportunity, session)
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Evaluation, body.value, session, logCWUOpportunityChange);
               break;
             case 'suspend':
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Suspended, body.value, session);
-              logCWUOpportunityChange('CWU suspended', dbResult.value as CWUOpportunity, session)
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Suspended, body.value, session, logCWUOpportunityChange);
               // Notify subscribers of suspension
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUSuspended(connection, dbResult.value);
               }
               break;
             case 'cancel':
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Canceled, body.value, session);
-              logCWUOpportunityChange('CWU cancelled', dbResult.value as CWUOpportunity, session)
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Canceled, body.value, session, logCWUOpportunityChange);
               // Notify subscribers of cancellation
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUCancelled(connection, dbResult.value);
               }
               break;
             case 'addAddendum':
-              dbResult = await db.addCWUOpportunityAddendum(connection, request.params.id, body.value, session);
-              logCWUOpportunityChange('CWU addendum added', dbResult.value as CWUOpportunity, session)
+              dbResult = await db.addCWUOpportunityAddendum(connection, request.params.id, body.value, session, logCWUOpportunityChange);
               // Notify all subscribed users on the opportunity of the update
               if (isValid(dbResult)) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);

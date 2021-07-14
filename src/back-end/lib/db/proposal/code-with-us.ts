@@ -1,7 +1,7 @@
 import { generateUuid } from 'back-end/lib';
 import { Connection, Transaction, tryDb } from 'back-end/lib/db';
 import { readOneFileById } from 'back-end/lib/db/file';
-import { generateCWUOpportunityQuery, readOneCWUOpportunitySlim, updateCWUOpportunityStatus } from 'back-end/lib/db/opportunity/code-with-us';
+import { generateCWUOpportunityQuery, logCWUOpportunityChange, readOneCWUOpportunitySlim, updateCWUOpportunityStatus } from 'back-end/lib/db/opportunity/code-with-us';
 import { readOneOrganization } from 'back-end/lib/db/organization';
 import { RawUser, rawUserToUser, readOneUserSlim } from 'back-end/lib/db/user';
 import { readCWUProposalHistory, readCWUProposalScore, readOneCWUProposal as hasReadPermissionCWUProposal } from 'back-end/lib/permissions';
@@ -665,7 +665,7 @@ export const awardCWUProposal = tryDb<[Id, string, AuthenticatedSession], CWUPro
     }
 
     // Update opportunity
-    await updateCWUOpportunityStatus(trx, proposalRecord.opportunity, CWUOpportunityStatus.Awarded, '', session);
+    await updateCWUOpportunityStatus(trx, proposalRecord.opportunity, CWUOpportunityStatus.Awarded, '', session, logCWUOpportunityChange);
 
     const dbResult = await readOneCWUProposal(trx, proposalRecord.id, session);
     if (isInvalid(dbResult) || !dbResult.value) {
