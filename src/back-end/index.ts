@@ -47,7 +47,9 @@ type AppRouter = Router<SupportedRequestBodies, any, any, any, SupportedResponse
 const logger = makeDomainLogger(consoleAdapter, 'back-end', ENV);
 
 export function connectToDatabase(): Connection {
-  if(!POSTGRES_URL){ throw new Error('Missing POSTGRES_URL')}
+  if(!POSTGRES_URL){ 
+    throw new Error('Missing POSTGRES_URL');
+  }
   return Knex({
     client: 'pg',
     connection: POSTGRES_URL as string,

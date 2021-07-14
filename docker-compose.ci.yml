@@ -65,10 +65,6 @@ services:
       db-test:
         condition: service_healthy
 
-    # La variable KEYCLOAK_URL est utilisée 
-    # * coté client (qui ne reconnait pas le hostname du conteneur)
-    # * coté serveur (qui ne peux pas trouver localhost:8080)
-    # En utilisant le réseau host, on rend localhost:8080 accessible
     environment:
       - NODE_ENV=development
       - SERVER_HOST=0.0.0.0
