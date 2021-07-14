@@ -1,4 +1,9 @@
 version: "3"
+
+
+volumes:
+  node_modules:
+
 services:
 
   db:
@@ -42,6 +47,7 @@ services:
       - 5000:5000 # Doc
     volumes:
       - ./:/usr/app/
+      - node_modules:/usr/app/node_modules
     #command: bash -c "pm2-runtime ecosystem.config.js"
     depends_on: 
       - keycloak
