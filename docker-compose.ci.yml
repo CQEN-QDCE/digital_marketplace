@@ -13,6 +13,19 @@ services:
       POSTGRES_PASSWORD: digitalmarketplace
       POSTGRES_DB: digitalmarketplace
 
+  db-test:
+    image: postgres:10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      POSTGRES_USER: digitalmarketplace
+      POSTGRES_PASSWORD: digitalmarketplace
+      POSTGRES_DB: dm_test
+
   keycloak:
     image: keycloak
     build: 
@@ -48,6 +61,8 @@ services:
       keycloak:
         condition: service_healthy
       db:
+        condition: service_healthy
+      db-test:
         condition: service_healthy
 
     # La variable KEYCLOAK_URL est utilisée 
