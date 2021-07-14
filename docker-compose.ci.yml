@@ -38,7 +38,7 @@ services:
         - ROOTURL=http://localhost:3000
     healthcheck:
       test: curl http://localhost:8080 --connect-timeout 1 --silent --stderr /dev/null > /dev/null
-      interval: 20s
+      interval: 5s
       timeout: 10s
       retries: 10
       start_period: 40s
@@ -55,8 +55,8 @@ services:
       test: curl http://localhost:3000 --connect-timeout 1 --silent > /dev/null
       interval: 10s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 120s
     depends_on: 
       keycloak:
         condition: service_healthy
