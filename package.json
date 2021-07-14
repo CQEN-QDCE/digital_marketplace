@@ -27,7 +27,7 @@
     "migrations:helper": "npx ts-node --require tsconfig-paths/register --project src/migrations/tsconfig.json \"$(npm bin)/knex\" --cwd src/migrations",
     "migrations:create": "npm run migrations:helper -- migrate:make -x ts --stub ./stub.ts",
     "migrations:latest": "npm run migrations:helper -- migrate:latest",
-    "migrations:test:latest": "NODE_ENV=test DATABASE_NAME=$TEST_DATABASE_NAME npm run migrations:latest",
+    "migrations:test:latest": "NODE_ENV=test POSTGRESQL_SERVICE_HOST=$TEST_POSTGRESQL_SERVICE_HOST DATABASE_NAME=$TEST_DATABASE_NAME npm run migrations:latest",
     "migrations:rollback": "npm run migrations:helper -- migrate:rollback",
     "migrations:up": "npm run migrations:helper -- migrate:up",
     "migrations:down": "npm run migrations:helper -- migrate:down",
