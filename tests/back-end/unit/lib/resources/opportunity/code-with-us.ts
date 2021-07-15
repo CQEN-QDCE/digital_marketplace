@@ -1,7 +1,7 @@
 // import assert from 'assert';
 
 import { connectToDatabase } from "back-end/index";
-import { addCWUOpportunityAddendum, createCWUOpportunity, updateCWUOpportunityVersion } from "back-end/lib/db";
+import { addCWUOpportunityAddendum, createCWUOpportunity, deleteCWUOpportunity, updateCWUOpportunityVersion } from "back-end/lib/db";
 import { CreateCWUOpportunityStatus, CWUOpportunityStatus } from "shared/lib/resources/opportunity/code-with-us";
 import { SessionRecord } from "shared/lib/resources/session";
 import { User } from "shared/lib/resources/user";
@@ -54,6 +54,12 @@ describe('Resource Code-With-Us', () => {
       const {status, ...opportunityUpdate} = opportunityTemplate;
       const newOpportunity = await createCWUOpportunity(dbConnexion, opportunityTemplate, opSession)
       await updateCWUOpportunityVersion(dbConnexion, {...opportunityUpdate, id: newOpportunity.value?.id}, opSession, logSpy)
+      expect(logSpy.calledOnce).to.be.true
+    })
+    it('Logs opportunity deletion', async () => {
+      const logSpy = spy()
+      const newOpportunity = await createCWUOpportunity(dbConnexion, opportunityTemplate, opSession)
+      await deleteCWUOpportunity(dbConnexion, newOpportunity.value?.id as string, opSession, logSpy)
       expect(logSpy.calledOnce).to.be.true
     })
     it('Logs opportunity addenda', async () => {

@@ -558,7 +558,7 @@ export const addCWUOpportunityAddendum = tryDb<[Id, string, AuthenticatedSession
   return valid(dbResult.value);
 });
 
-export const deleteCWUOpportunity = tryDb<[Id], CWUOpportunity>(async (connection, id) => {
+export const deleteCWUOpportunity = tryDb<[Id, AuthenticatedSession, Function], CWUOpportunity>(async (connection, id, session, logCreation) => {
   // Delete root record - cascade relationships in database will cleanup versions/attachments/addenda automatically
   const [result] = await connection<RawCWUOpportunity>('cwuOpportunities')
     .where({ id })
@@ -569,7 +569,10 @@ export const deleteCWUOpportunity = tryDb<[Id], CWUOpportunity>(async (connectio
   }
   result.addenda = [];
   result.attachments = [];
-  return valid(await rawCWUOpportunityToCWUOpportunity(connection, result));
+  const opportunity = await rawCWUOpportunityToCWUOpportunity(connection, result);
+  logCreation('CWU addendum added', opportunity, session)
+
+  return valid(opportunity);
 });
 
 export const closeCWUOpportunities = tryDb<[], number>(async (connection) => {

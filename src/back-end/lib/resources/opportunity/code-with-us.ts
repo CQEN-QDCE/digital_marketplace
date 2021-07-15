@@ -613,11 +613,10 @@ const resource: Resource = {
       },
       respond: wrapRespond({
         valid: async request => {
-          const dbResult = await db.deleteCWUOpportunity(connection, request.body);
+          const dbResult = await db.deleteCWUOpportunity(connection, request.body, request.session as SessionRecord, logCWUOpportunityChange);
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }
-          logCWUOpportunityChange('CWU deleted', dbResult.value as CWUOpportunity, request.session as SessionRecord)
           return basicResponse(200, request.session, makeJsonResponseBody(dbResult.value));
         },
         invalid: async request => {
