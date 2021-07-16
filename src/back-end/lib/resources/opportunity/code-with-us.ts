@@ -1,8 +1,5 @@
-import { ENV } from 'back-end/config';
 import * as crud from 'back-end/lib/crud';
 import * as db from 'back-end/lib/db';
-import { makeDomainLogger } from 'back-end/lib/logger';
-import { console as consoleAdapter } from 'back-end/lib/logger/adapters';
 import * as cwuOpportunityNotifications from 'back-end/lib/mailer/notifications/opportunity/code-with-us';
 import * as permissions from 'back-end/lib/permissions';
 import { basicResponse, JsonResponseBody, makeJsonResponseBody, nullRequestBodyHandler, wrapRespond } from 'back-end/lib/server';
@@ -16,8 +13,6 @@ import { AuthenticatedSession, Session, SessionRecord } from 'shared/lib/resourc
 import { adt, ADT, Id } from 'shared/lib/types';
 import { allValid, getInvalidValue, getValidValue, invalid, isInvalid, isValid, mapValid, valid, validateUUID, Validation } from 'shared/lib/validation';
 import * as opportunityValidation from 'shared/lib/validation/opportunity/code-with-us';
-
-const logger = makeDomainLogger(consoleAdapter, 'CWU', ENV);
 
 export interface ValidatedCreateRequestBody extends Omit<CWUOpportunity, 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy' | 'id' | 'addenda'> {
   status: CreateCWUOpportunityStatus;
@@ -254,7 +249,7 @@ const resource: Resource = {
       },
       respond: wrapRespond<ValidatedCreateRequestBody, CreateValidationErrors, JsonResponseBody<CWUOpportunity>, JsonResponseBody<CreateValidationErrors>, Session>({
         valid: (async request => {
-          const dbResult = await db.createCWUOpportunity(connection, omit(request.body, 'session'), request.body.session, logCWUOpportunityChange);
+          const dbResult = await db.createCWUOpportunity(connection, omit(request.body, 'session'), request.body.session);
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }
@@ -543,7 +538,7 @@ const resource: Resource = {
           const { session, body } = request.body;
           switch (body.tag) {
             case 'edit':
-              dbResult = await db.updateCWUOpportunityVersion(connection, { ...body.value, id: request.params.id }, session, logCWUOpportunityChange);
+              dbResult = await db.updateCWUOpportunityVersion(connection, { ...body.value, id: request.params.id }, session);
               // Notify all subscribed users on the opportunity of the update (only if not draft)
               if (isValid(dbResult) && dbResult.value.status !== CWUOpportunityStatus.Draft) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);
@@ -551,31 +546,31 @@ const resource: Resource = {
               break;
             case 'publish':
               const existingOpportunity = getValidValue(await db.readOneCWUOpportunity(connection, request.params.id, session), null);
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Published, body.value, session, logCWUOpportunityChange);
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Published, body.value, session);
               // Notify subscribers of publication
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUPublished(connection, dbResult.value, existingOpportunity?.status === CWUOpportunityStatus.Suspended);
               }
               break;
             case 'startEvaluation':
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Evaluation, body.value, session, logCWUOpportunityChange);
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Evaluation, body.value, session);
               break;
             case 'suspend':
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Suspended, body.value, session, logCWUOpportunityChange);
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Suspended, body.value, session);
               // Notify subscribers of suspension
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUSuspended(connection, dbResult.value);
               }
               break;
             case 'cancel':
-              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Canceled, body.value, session, logCWUOpportunityChange);
+              dbResult = await db.updateCWUOpportunityStatus(connection, request.params.id, CWUOpportunityStatus.Canceled, body.value, session);
               // Notify subscribers of cancellation
               if (isValid(dbResult) && permissions.isSignedIn(request.session)) {
                 cwuOpportunityNotifications.handleCWUCancelled(connection, dbResult.value);
               }
               break;
             case 'addAddendum':
-              dbResult = await db.addCWUOpportunityAddendum(connection, request.params.id, body.value, session, logCWUOpportunityChange);
+              dbResult = await db.addCWUOpportunityAddendum(connection, request.params.id, body.value, session);
               // Notify all subscribed users on the opportunity of the update
               if (isValid(dbResult)) {
                 cwuOpportunityNotifications.handleCWUUpdated(connection, dbResult.value);
@@ -613,7 +608,7 @@ const resource: Resource = {
       },
       respond: wrapRespond({
         valid: async request => {
-          const dbResult = await db.deleteCWUOpportunity(connection, request.body, request.session as SessionRecord, logCWUOpportunityChange);
+          const dbResult = await db.deleteCWUOpportunity(connection, request.body, request.session as SessionRecord);
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }
@@ -626,18 +621,5 @@ const resource: Resource = {
     };
   }
 };
-
-/**
- * Log the opportunity's changes on the console.
- * 
- * @param title Log title
- * @param opportunity The touched opportunity
- * @param session The user session
- */
-function logCWUOpportunityChange(title: string, opportunity: CWUOpportunity, session: SessionRecord) {
-  const { history, ...opportunityData } = opportunity;
-  logger.info(title, {...opportunityData, changedBy: session.user.id, sessionId: session.id });
-}
-
 
 export default resource;

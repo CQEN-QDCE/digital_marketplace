@@ -7,9 +7,7 @@ import { User, UserStatus, UserType } from "shared/lib/resources/user";
 
 const dbConnexion = connectToDatabase();
 
-
-const opUser = {
-  id: generateUuid(),
+const user = {
   acceptedTermsAt: new Date(),
   capabilities: [],
   deactivatedBy: null,
@@ -23,7 +21,18 @@ const opUser = {
   name: 'd',
   notificationsOn: null,
   status: UserStatus.Active,
+}
+
+const opUser = {
+  ...user,
+  id: generateUuid(),
   type: UserType.Government
+}
+
+const vendorUser = {
+  ...user,
+  id: generateUuid(),
+  type: UserType.Vendor
 }
 
 
@@ -40,22 +49,34 @@ export async function createOpUser(){
 }
 
 
-export function createOpSession(opUser: User): SessionRecord {
+export async function createVendorUser(){
+  const now = new Date();
+  const [result] = await dbConnexion<RawUser>('users')
+      .insert({
+        ...vendorUser,
+        id: generateUuid(),
+        createdAt: now,
+        updatedAt: now,
+      } as CreateUserParams, '*')
+  return await rawUserToUser(dbConnexion, result);
+}
+
+
+export function createUserSession(user: User): SessionRecord {
   return {
     id: generateUuid(),
     createdAt: new Date,
     updatedAt: new Date,
     accessToken: generateUuid(),
-    user: opUser,
+    user,
   }
 }
 
 var knexCleaner = require('knex-cleaner');
 
 
-export async function cleanupUsers() {
+export async function cleanupDatabase() {
   await knexCleaner.clean(dbConnexion, {
     ignoreTables: [DB_MIGRATIONS_TABLE_NAME]
   })
-  await dbConnexion<RawUser>('users').delete()
 }

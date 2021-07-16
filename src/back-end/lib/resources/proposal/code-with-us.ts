@@ -1,8 +1,5 @@
-import { ENV } from 'back-end/config';
 import * as crud from 'back-end/lib/crud';
 import * as db from 'back-end/lib/db';
-import { makeDomainLogger } from 'back-end/lib/logger';
-import { console as consoleAdapter } from 'back-end/lib/logger/adapters';
 import * as cwuProposalNotifications from 'back-end/lib/mailer/notifications/proposal/code-with-us';
 import * as permissions from 'back-end/lib/permissions';
 import { basicResponse, JsonResponseBody, makeJsonResponseBody, nullRequestBodyHandler, wrapRespond } from 'back-end/lib/server';
@@ -12,12 +9,11 @@ import { get, omit } from 'lodash';
 import { getNumber, getString, getStringArray } from 'shared/lib';
 import { FileRecord } from 'shared/lib/resources/file';
 import { createBlankIndividualProponent, CreateCWUProposalStatus, CreateProponentRequestBody, CreateRequestBody, CreateValidationErrors, CWUProposal, CWUProposalSlim, CWUProposalStatus, DeleteValidationErrors, isValidStatusChange, UpdateRequestBody, UpdateValidationErrors } from 'shared/lib/resources/proposal/code-with-us';
-import { AuthenticatedSession, Session, SessionRecord } from 'shared/lib/resources/session';
+import { AuthenticatedSession, Session } from 'shared/lib/resources/session';
 import { adt, ADT, Id } from 'shared/lib/types';
 import { allValid, getInvalidValue, getValidValue, invalid, isInvalid, valid, Validation } from 'shared/lib/validation';
 import * as proposalValidation from 'shared/lib/validation/proposal/code-with-us';
 
-const logger = makeDomainLogger(consoleAdapter, 'CWU', ENV);
 
 interface ValidatedCreateRequestBody {
   session: AuthenticatedSession;
@@ -251,7 +247,6 @@ const resource: Resource = {
           if (dbResult.value.status === CWUProposalStatus.Submitted) {
             cwuProposalNotifications.handleCWUProposalSubmitted(connection, dbResult.value.id, request.body.session);
           }
-          logCWUProposalChange('CWU proposal created', dbResult.value as CWUProposal, request.session as SessionRecord)
           return basicResponse(201, request.session, makeJsonResponseBody(dbResult.value));
         }),
         invalid: (async request => {
@@ -460,33 +455,27 @@ const resource: Resource = {
           switch (body.tag) {
             case 'edit':
               dbResult = await db.updateCWUProposal(connection, { ...body.value, id: request.params.id }, session);
-              logCWUProposalChange('CWU proposal updated', dbResult.value as CWUProposal, session)
               break;
             case 'submit':
               dbResult = await db.updateCWUProposalStatus(connection, request.params.id, CWUProposalStatus.Submitted, body.value, session);
-              logCWUProposalChange('CWU proposal submited', dbResult.value as CWUProposal, session)
               // Notify of successful submission
               cwuProposalNotifications.handleCWUProposalSubmitted(connection, request.params.id, session);
               break;
             case 'score':
               dbResult = await db.updateCWUProposalScore(connection, request.params.id, body.value, session);
-              logCWUProposalChange('CWU proposal scored', dbResult.value as CWUProposal, session)
               break;
             case 'award':
               dbResult = await db.awardCWUProposal(connection, request.params.id, body.value, session);
-              logCWUProposalChange('CWU proposal awarded', dbResult.value as CWUProposal, session)
               // Notify of award (also notifies unsuccessful proponents)
               cwuProposalNotifications.handleCWUProposalAwarded(connection, request.params.id, session);
               break;
             case 'disqualify':
               dbResult = await db.updateCWUProposalStatus(connection, request.params.id, CWUProposalStatus.Disqualified, body.value, session);
-              logCWUProposalChange('CWU proposal disqualified', dbResult.value as CWUProposal, session)
               // Notify of disqualification
               cwuProposalNotifications.handleCWUProposalDisqualified(connection, request.params.id, session);
               break;
             case 'withdraw':
               dbResult = await db.updateCWUProposalStatus(connection, request.params.id, CWUProposalStatus.Withdrawn, body.value, session);
-              logCWUProposalChange('CWU proposal withdrawed', dbResult.value as CWUProposal, session)
               // Notify opportunity author of the withdrawal, if the opportunity is closed
               cwuProposalNotifications.handleCWUProposalWithdrawn(connection, request.params.id, session);
               break;
@@ -526,7 +515,6 @@ const resource: Resource = {
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }
-          logCWUProposalChange('CWU proposal deleted', dbResult.value as CWUProposal, request.session as SessionRecord)
           return basicResponse(200, request.session, makeJsonResponseBody(dbResult.value));
         },
         invalid: async request => {
@@ -536,17 +524,6 @@ const resource: Resource = {
     };
   }
 };
-
-/**
- * Log the proposal's changes to the console
- * @param title The log title
- * @param proposal The touched proposal
- * @param session The user session
- */
-function logCWUProposalChange(title: string, proposal: CWUProposal, session: SessionRecord) {
-  const { history, ...opportunityData } = proposal;
-  logger.info(title, {...opportunityData, changedBy: session.user.id, sessionId: session.id });
-}
 
 export default resource;
 
