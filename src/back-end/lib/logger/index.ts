@@ -1,3 +1,4 @@
+import { SessionRecord } from 'back-end/../shared/lib/resources/session';
 import { Adapter, AdapterFunction } from 'back-end/lib/logger/adapters';
 import { reduce } from 'lodash';
 
@@ -39,13 +40,27 @@ export function makeLogger(adapter: Adapter): Logger {
 
 const noOpLog: LogFunction = logWith((domain, msg) => { return; });
 
-export function makeDomainLogger(adapter: Adapter, domain: string, env: 'development' | 'production'): DomainLogger {
+export function makeDomainLogger(adapter: Adapter, domain: string, env: 'development' | 'production' | 'test'): DomainLogger {
   const { info, warn, error, debug } = makeLogger(adapter);
-  const isDev = env === 'development';
+  const isDev = env !== 'production';
   return {
     info: info.bind(null, domain),
     warn: warn.bind(null, domain),
     error: error.bind(null, domain),
     debug: isDev ? debug.bind(null, domain) : noOpLog.bind(null, domain)
   };
+}
+
+function logObjectChange(domainLogger: DomainLogger, msg: string, object: any, userSession: SessionRecord){
+  return domainLogger.info(msg, {...object, changedBy: userSession.user.id, sessionId: userSession.id });
+}
+
+// Make this functions stubbable
+export default {
+  logObjectChange
+}
+
+// Make this functions stubbable
+export {
+  logObjectChange
 }

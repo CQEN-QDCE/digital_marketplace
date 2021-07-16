@@ -1,16 +1,20 @@
+import { ENV } from 'back-end/config';
 import { generateUuid } from 'back-end/lib';
 import { Connection, Transaction, tryDb } from 'back-end/lib/db';
+import { console as consoleAdapter } from 'back-end/lib/logger/adapters';
 import { readOneFileById } from 'back-end/lib/db/file';
 import { readOneCWUAwardedProposal, readSubmittedCWUProposalCount } from 'back-end/lib/db/proposal/code-with-us';
 import { RawCWUOpportunitySubscriber } from 'back-end/lib/db/subscribers/code-with-us';
 import { readOneUser, readOneUserSlim } from 'back-end/lib/db/user';
+import { makeDomainLogger } from 'back-end/lib/logger';
+import Logger from 'back-end/lib/logger';
 import * as cwuOpportunityNotifications from 'back-end/lib/mailer/notifications/opportunity/code-with-us';
 import { valid } from 'shared/lib/http';
 import { getCWUOpportunityViewsCounterName } from 'shared/lib/resources/counter';
 import { FileRecord } from 'shared/lib/resources/file';
 import { Addendum, CreateCWUOpportunityStatus, CWUOpportunity, CWUOpportunityEvent, CWUOpportunityHistoryRecord, CWUOpportunitySlim, CWUOpportunityStatus, privateOpportunitiesStatuses, publicOpportunityStatuses } from 'shared/lib/resources/opportunity/code-with-us';
 import { CWUProposalSlim, CWUProposalStatus, getCWUProponentEmail, getCWUProponentId, getCWUProponentName } from 'shared/lib/resources/proposal/code-with-us';
-import { AuthenticatedSession, Session } from 'shared/lib/resources/session';
+import { AuthenticatedSession, Session, SessionRecord } from 'shared/lib/resources/session';
 import { User, UserType } from 'shared/lib/resources/user';
 import { adt, Id } from 'shared/lib/types';
 import { getValidValue, isInvalid } from 'shared/lib/validation';
@@ -300,7 +304,7 @@ export const readOneCWUOpportunity = tryDb<[Id, Session], CWUOpportunity | null>
         result.reporting = {
           numViews,
           numWatchers,
-          numProposals
+          numProposals: numProposals as number
         };
       }
     }
@@ -364,7 +368,7 @@ export const readManyCWUOpportunities = tryDb<[Session], CWUOpportunitySlim[]>(a
   return valid(await Promise.all(results.map(async raw => await rawCWUOpportunitySlimToCWUOpportunitySlim(connection, raw))));
 });
 
-export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, AuthenticatedSession], CWUOpportunity>(async (connection, opportunity, session) => {
+export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, AuthenticatedSession] | [CreateCWUOpportunityParams, AuthenticatedSession], CWUOpportunity>(async (connection, opportunity, session) => {
   // Create root opportunity record
   const now = new Date();
   const opportunityId = await connection.transaction(async trx => {
@@ -410,7 +414,7 @@ export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, Authentic
 
     // Create attachment records
     await createCWUOpportunityAttachments(connection, trx, oppVersionRecord.id, attachments);
-
+    
     return rootOppRecord.id;
   });
 
@@ -418,8 +422,26 @@ export const createCWUOpportunity = tryDb<[CreateCWUOpportunityParams, Authentic
   if (isInvalid(dbResult) || !dbResult.value) {
     throw new Error('unable to create opportunity');
   }
+  logCWUOpportunityChange( 'CWU created', dbResult.value as CWUOpportunity, session as SessionRecord)
+
   return valid(dbResult.value);
 });
+
+
+const logger = makeDomainLogger(consoleAdapter, 'CWU', ENV);
+
+
+/**
+ * Log the opportunity's changes on the console.
+ * 
+ * @param title Log title
+ * @param opportunity The touched opportunity
+ * @param session The user session
+ */
+export function logCWUOpportunityChange(title: string, opportunity: CWUOpportunity, session: SessionRecord) {
+  const { history, ...opportunityData } = opportunity;
+  return Logger.logObjectChange(logger, title, opportunityData, session);
+}
 
 export async function isCWUOpportunityAuthor(connection: Connection, user: User, id: Id): Promise<boolean> {
   try {
@@ -430,6 +452,10 @@ export async function isCWUOpportunityAuthor(connection: Connection, user: User,
   } catch (exception) {
     return false;
   }
+}
+
+const CwuOpportunity = {
+  logger: logCWUOpportunityChange
 }
 
 export const updateCWUOpportunityVersion = tryDb<[UpdateCWUOpportunityParams, AuthenticatedSession], CWUOpportunity>(async (connection, opportunity, session) => {
@@ -468,6 +494,7 @@ export const updateCWUOpportunityVersion = tryDb<[UpdateCWUOpportunityParams, Au
   if (isInvalid(dbResult) || !dbResult.value) {
     throw new Error('unable to update opportunity');
   }
+  logCWUOpportunityChange( 'CWU updated', dbResult.value as CWUOpportunity, session as SessionRecord)
   return valid(dbResult.value);
 });
 
@@ -492,6 +519,7 @@ export const updateCWUOpportunityStatus = tryDb<[Id, CWUOpportunityStatus, strin
     throw new Error('unable to update opportunity');
   }
 
+  logCWUOpportunityChange( 'CWU published', dbResult.value as CWUOpportunity, session as SessionRecord)
   return valid(dbResult.value);
 });
 
@@ -529,10 +557,11 @@ export const addCWUOpportunityAddendum = tryDb<[Id, string, AuthenticatedSession
   if (isInvalid(dbResult) || !dbResult.value) {
     throw new Error('unable to add addendum');
   }
+  logCWUOpportunityChange( 'CWU addendum added', dbResult.value as CWUOpportunity, session as SessionRecord)
   return valid(dbResult.value);
 });
 
-export const deleteCWUOpportunity = tryDb<[Id], CWUOpportunity>(async (connection, id) => {
+export const deleteCWUOpportunity = tryDb<[Id, AuthenticatedSession], CWUOpportunity>(async (connection, id, session) => {
   // Delete root record - cascade relationships in database will cleanup versions/attachments/addenda automatically
   const [result] = await connection<RawCWUOpportunity>('cwuOpportunities')
     .where({ id })
@@ -543,7 +572,10 @@ export const deleteCWUOpportunity = tryDb<[Id], CWUOpportunity>(async (connectio
   }
   result.addenda = [];
   result.attachments = [];
-  return valid(await rawCWUOpportunityToCWUOpportunity(connection, result));
+  const opportunity = await rawCWUOpportunityToCWUOpportunity(connection, result);
+  logCWUOpportunityChange( 'CWU deleted', opportunity, session)
+
+  return valid(opportunity);
 });
 
 export const closeCWUOpportunities = tryDb<[], number>(async (connection) => {
@@ -614,3 +646,7 @@ export const readOneCWUOpportunityAuthor = tryDb<[Id], User | null>(async (conne
 
   return authorId ? await readOneUser(connection, authorId) : valid(null);
 });
+
+
+
+export default CwuOpportunity

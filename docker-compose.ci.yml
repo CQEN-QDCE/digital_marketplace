@@ -2,10 +2,8 @@ version: "3"
 services:
   db:
     image: postgres:10
-    ports:
-      - 5432:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}" ]
       interval: 10s
       timeout: 10s
       retries: 3
@@ -14,6 +12,19 @@ services:
       POSTGRES_USER: digitalmarketplace
       POSTGRES_PASSWORD: digitalmarketplace
       POSTGRES_DB: digitalmarketplace
+
+  db-test:
+    image: postgres:10
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      POSTGRES_USER: digitalmarketplace
+      POSTGRES_PASSWORD: digitalmarketplace
+      POSTGRES_DB: dm_test
 
   keycloak:
     image: keycloak
@@ -27,9 +38,9 @@ services:
         - ROOTURL=http://localhost:3000
     healthcheck:
       test: curl http://localhost:8080 --connect-timeout 1 --silent --stderr /dev/null > /dev/null
-      interval: 10s
+      interval: 5s
       timeout: 10s
-      retries: 3
+      retries: 10
       start_period: 40s
     environment: 
       - KEYCLOAK_USER=admin
@@ -44,28 +55,28 @@ services:
       test: curl http://localhost:3000 --connect-timeout 1 --silent > /dev/null
       interval: 10s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 120s
     depends_on: 
       keycloak:
         condition: service_healthy
       db:
         condition: service_healthy
+      db-test:
+        condition: service_healthy
 
-    # La variable KEYCLOAK_URL est utilisée 
-    # * coté client (qui ne reconnait pas le hostname du conteneur)
-    # * coté serveur (qui ne peux pas trouver localhost:8080)
-    # En utilisant le réseau host, on rend localhost:8080 accessible
     environment:
       - NODE_ENV=development
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=3000
-      - POSTGRESQL_SERVICE_HOST=localhost
+      - POSTGRESQL_SERVICE_HOST=db
       - POSTGRESQL_SERVICE_PORT=5432
       - TIMEZONE=Canada/Eastern
       - DATABASE_USERNAME=digitalmarketplace
       - DATABASE_PASSWORD=digitalmarketplace
       - DATABASE_NAME=digitalmarketplace
+      - TEST_DATABASE_NAME=dm_test
+      - TEST_POSTGRESQL_SERVICE_HOST=db-test
       - COOKIE_SECRET=foobar
       - ORIGIN=http://localhost:3000
       - KEYCLOAK_ADMIN_USER=admin
@@ -84,17 +95,15 @@ services:
       - SWAGGER_UI_PATH=/swagger
       - VENDOR_ACCOUNT_CREATION_DISABLED=1
       - CI=true
+
   selenium:
     image: selenium/standalone-chrome-debug
     healthcheck:
       test: curl http://localhost:4444 --connect-timeout 1 --silent --stderr /dev/null > /dev/null
-      interval: 10s
+      interval: 20s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 40s
     depends_on: 
       ui:
         condition: service_healthy
-    ports:
-      - 4444:4444
-      - 5999:5900

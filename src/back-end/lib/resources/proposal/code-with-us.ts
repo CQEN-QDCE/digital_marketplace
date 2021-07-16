@@ -14,6 +14,7 @@ import { adt, ADT, Id } from 'shared/lib/types';
 import { allValid, getInvalidValue, getValidValue, invalid, isInvalid, valid, Validation } from 'shared/lib/validation';
 import * as proposalValidation from 'shared/lib/validation/proposal/code-with-us';
 
+
 interface ValidatedCreateRequestBody {
   session: AuthenticatedSession;
   opportunity: Id;
@@ -525,3 +526,4 @@ const resource: Resource = {
 };
 
 export default resource;
+

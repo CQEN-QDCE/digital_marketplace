@@ -60,7 +60,7 @@ async function makeRouter(connection: Connection): Promise<Router<any, any, any,
             authQuery.redirect_uri += `?redirectOnSuccess=${redirectOnSuccess}`;
           }
 
-          if (provider === VENDOR_IDP_SUFFIX || provider === GOV_IDP_SUFFIX) {
+          if ([VENDOR_IDP_SUFFIX, GOV_IDP_SUFFIX].includes(provider)) {
             authQuery.kc_idp_hint = provider;
           }
           // Cast authQuery as any to support use with qs.stringify.
@@ -266,7 +266,7 @@ async function establishSessionWithClaims(connection: Connection, request: Reque
   const claims = tokenSet.claims();
   let userType: UserType;
   const identityProvider = getString(claims, 'loginSource');
-  switch (identityProvider) {
+  switch (identityProvider.toUpperCase()) {
     case GOV_IDP_SUFFIX.toUpperCase():
       const roles = getStringArray(claims, 'roles');
       if (roles.includes('dm_admin')) {

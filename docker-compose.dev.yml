@@ -1,14 +1,24 @@
 version: "3"
+
+
+volumes:
+  node_modules:
+
 services:
 
   db:
     image: postgres:10
-    ports:
-      - 5432:5432
     environment:
       POSTGRES_USER: digitalmarketplace
       POSTGRES_PASSWORD: digitalmarketplace
       POSTGRES_DB: digitalmarketplace
+
+  db-test:
+    image: postgres:10
+    environment:
+      POSTGRES_USER: digitalmarketplace
+      POSTGRES_PASSWORD: digitalmarketplace
+      POSTGRES_DB: dm_test
 
   keycloak:
     image: keycloak
@@ -37,6 +47,7 @@ services:
       - 5000:5000 # Doc
     volumes:
       - ./:/usr/app/
+      - node_modules:/usr/app/node_modules
     #command: bash -c "pm2-runtime ecosystem.config.js"
     depends_on: 
       - keycloak
@@ -57,6 +68,8 @@ services:
       - DATABASE_USERNAME=digitalmarketplace
       - DATABASE_PASSWORD=digitalmarketplace
       - DATABASE_NAME=digitalmarketplace
+      - TEST_DATABASE_NAME=dm_test
+      - TEST_POSTGRESQL_SERVICE_HOST=db-test
       - COOKIE_SECRET=foobar
       - ORIGIN=http://localhost:3000
       - KEYCLOAK_ADMIN_USER=admin

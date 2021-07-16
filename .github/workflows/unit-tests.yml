@@ -2,11 +2,13 @@ name: Unit tests
 on: [push]
 jobs:
   back-end:
+    name: '[Unit] Back-end'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-      - run: npm install
-      - run: npm run back-end:test
+    - uses: actions/checkout@v2
+    - name: Run docker-compose stack
+      run: docker-compose -f docker-compose.ci.yml up -d
+    - name: List containers
+      run: docker-compose -f docker-compose.ci.yml ps
+    - name: Run acceptance tests
+      run: docker-compose -f docker-compose.ci.yml exec -T ui npm run back-end:test

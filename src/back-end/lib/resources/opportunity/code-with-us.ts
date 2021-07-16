@@ -9,7 +9,7 @@ import { get, omit } from 'lodash';
 import { addDays, getNumber, getString, getStringArray } from 'shared/lib';
 import { FileRecord } from 'shared/lib/resources/file';
 import { CreateCWUOpportunityStatus, CreateRequestBody, CreateValidationErrors, CWUOpportunity, CWUOpportunitySlim, CWUOpportunityStatus, DeleteValidationErrors, isValidStatusChange, UpdateEditRequestBody, UpdateRequestBody, UpdateValidationErrors } from 'shared/lib/resources/opportunity/code-with-us';
-import { AuthenticatedSession, Session } from 'shared/lib/resources/session';
+import { AuthenticatedSession, Session, SessionRecord } from 'shared/lib/resources/session';
 import { adt, ADT, Id } from 'shared/lib/types';
 import { allValid, getInvalidValue, getValidValue, invalid, isInvalid, isValid, mapValid, valid, validateUUID, Validation } from 'shared/lib/validation';
 import * as opportunityValidation from 'shared/lib/validation/opportunity/code-with-us';
@@ -608,7 +608,7 @@ const resource: Resource = {
       },
       respond: wrapRespond({
         valid: async request => {
-          const dbResult = await db.deleteCWUOpportunity(connection, request.body);
+          const dbResult = await db.deleteCWUOpportunity(connection, request.body, request.session as SessionRecord);
           if (isInvalid(dbResult)) {
             return basicResponse(503, request.session, makeJsonResponseBody({ database: [db.ERROR_MESSAGE] }));
           }

@@ -46,10 +46,13 @@ type AppRouter = Router<SupportedRequestBodies, any, any, any, SupportedResponse
 
 const logger = makeDomainLogger(consoleAdapter, 'back-end', ENV);
 
-export function connectToDatabase(postgresUrl: string): Connection {
+export function connectToDatabase(): Connection {
+  if (!POSTGRES_URL) {
+    throw new Error('Missing POSTGRES_URL');
+  }
   return Knex({
     client: 'pg',
-    connection: postgresUrl,
+    connection: POSTGRES_URL as string,
     migrations: {
       tableName: DB_MIGRATIONS_TABLE_NAME
     },
@@ -146,7 +149,7 @@ async function start() {
     throw new Error('Invalid environment variable configuration.');
   }
   // Connect to Postgres.
-  const connection = connectToDatabase(POSTGRES_URL);
+  const connection = connectToDatabase();
   logger.info('connected to the database');
   // Create the router.
   let router: AppRouter = await (SCHEDULED_DOWNTIME ? createDowntimeRouter : createRouter)(connection);

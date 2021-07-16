@@ -5,7 +5,7 @@ import { debounce, set } from 'lodash';
 import { adt } from 'shared/lib/types';
 
 const element = document.getElementById('main') || document.body;
-const debug = NODE_ENV === 'development';
+const debug = NODE_ENV !== 'production';
 start(app, element, debug)
   .then(stateManager => {
     // Expose state manager in development.

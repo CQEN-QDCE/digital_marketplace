@@ -20,6 +20,7 @@ export interface Resource<SupportedRequestBodies, SupportedResponseBodies, Creat
   readMany?: ReadMany<SupportedResponseBodies, Session, Connection>;
   update?: Update<SupportedRequestBodies, SupportedResponseBodies, UpdateParsedReqB, UpdateValidatedReqB, UpdateReqBErrors, Session, Connection>;
   delete?: Delete<SupportedResponseBodies, DeleteValidatedReqB, DeleteReqBErrors, Session, Connection>;
+  logChange?: () => void;
 }
 
 export function makeCreateRoute<SupportedRequestBodies, SupportedResponseBodies, ParsedReqBody, ValidatedReqBody, ReqBodyErrors, Session, Connection>(connection: Connection, create: Create<SupportedRequestBodies, SupportedResponseBodies, ParsedReqBody, ValidatedReqBody, ReqBodyErrors, Session, Connection>): Route<SupportedRequestBodies, ParsedReqBody, ValidatedReqBody, ReqBodyErrors, SupportedResponseBodies, null, Session> {

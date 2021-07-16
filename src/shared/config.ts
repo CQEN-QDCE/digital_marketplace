@@ -22,18 +22,13 @@ export const VENDOR_ACCOUNT_CREATION_DISABLED = parseBooleanEnvironmentVariable(
 export const SHOW_TEST_INDICATOR = parseBooleanEnvironmentVariable(process.env.SHOW_TEST_INDICATOR) || false;
 
 export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'digitalmarketplace@gov.bc.ca';
-export const GOV_IDP_SUFFIX = process.env.GOV_IDP_SUFFIX || 'idir';
 
+// Government's identity provider
+export const GOV_IDP_SUFFIX = process.env.GOV_IDP_SUFFIX || 'idir';
 export const GOV_IDP_NAME = process.env.GOV_IDP_NAME || 'IDIR';
 
-export const GITHUB_ENABLED = !!process.env.GITHUBID;
-
-export const PROVINCIAL_IDP_NAME = 'ClicSEQUR Express';
-
-export const PROVINCIAL_IDP_ENABLED = !!PROVINCIAL_IDP_NAME
-
-export const VENDOR_IDP_SUFFIX = process.env.VENDOR_IDP_SUFFIX ||  PROVINCIAL_IDP_NAME || 'github';
-
+// Vendors' identifiy provider
+export const VENDOR_IDP_SUFFIX = process.env.VENDOR_IDP_SUFFIX || 'github';
 export const VENDOR_IDP_NAME = process.env.VENDOR_IDP_NAME || 'GitHub';
 
 export const TIMEZONE = process.env.TIMEZONE || 'America/Vancouver';

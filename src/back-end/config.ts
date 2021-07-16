@@ -28,14 +28,15 @@ export const REPOSITORY_ROOT_DIR = dirname(findUp.sync('package.json') || '') ||
 
 // Load environment variables from a .env file.
 dotenv.config({
-  debug: process.env.NODE_ENV === 'development',
+  debug: process.env.NODE_ENV !== 'production',
   path: resolve(REPOSITORY_ROOT_DIR, '.env')
 });
 
-export const NODE_ENV: 'development' | 'production' = (() => {
+export const NODE_ENV: 'development' | 'production' | 'test' = (() => {
   switch (process.env.NODE_ENV) {
     case 'development': return 'development';
     case 'production': return 'production';
+    case 'test': return 'test';
     default: return 'production';
   }
 })();
@@ -127,7 +128,7 @@ const developmentMailerConfigOptions = get('MAILER_GMAIL_USER', '')
 ? developmentGmailMailerConfigOptions
 : developmentSendmailMailerConfigOptions;
 
-export const MAILER_CONFIG = ENV === 'development' ? developmentMailerConfigOptions : productionMailerConfigOptions;
+export const MAILER_CONFIG = ENV !== 'production' ? developmentMailerConfigOptions : productionMailerConfigOptions;
 
 export const MAILER_FROM = get('MAILER_FROM', `Digital Marketplace<${MAILER_REPLY}>`);
 
@@ -174,8 +175,8 @@ function errorToJson(error: Error): object {
 export function getConfigErrors(): string[] {
   let errors: string[] = [];
 
-  if (ENV !== 'development' && ENV !== 'production') {
-    errors.push('NODE_ENV must be either "development" or "production"');
+  if (!['development', 'production', 'test'].includes(ENV)) {
+    errors.push('NODE_ENV must be either"test", "development" or "production"');
   }
 
   if (!SERVER_HOST.match(/^\d+\.\d+\.\d+\.\d+/)) {

@@ -10,12 +10,17 @@ import { FileRecord } from 'shared/lib/resources/file';
 import { CWUOpportunityStatus, privateOpportunitiesStatuses, publicOpportunityStatuses } from 'shared/lib/resources/opportunity/code-with-us';
 import { Organization } from 'shared/lib/resources/organization';
 import { CreateCWUProposalStatus, CreateIndividualProponentRequestBody, CWUIndividualProponent, CWUProposal, CWUProposalEvent, CWUProposalHistoryRecord, CWUProposalSlim, CWUProposalStatus, isCWUProposalStatusVisibleToGovernment, isRankableCWUProposalStatus, UpdateProponentRequestBody } from 'shared/lib/resources/proposal/code-with-us';
-import { AuthenticatedSession, Session } from 'shared/lib/resources/session';
+import { AuthenticatedSession, Session, SessionRecord } from 'shared/lib/resources/session';
 import { User, UserType } from 'shared/lib/resources/user';
 import { ADT, adt, Id } from 'shared/lib/types';
 import { getValidValue, isInvalid } from 'shared/lib/validation';
+import { console as consoleAdapter } from 'back-end/lib/logger/adapters';
+import Logger, { makeDomainLogger } from 'back-end/lib/logger';
+import { ENV } from 'back-end/config';
 
-interface CreateCWUProposalParams {
+const logger = makeDomainLogger(consoleAdapter, 'CWU', ENV);
+
+export interface CreateCWUProposalParams {
   opportunity: Id;
   proposalText: string;
   additionalComments: string;
@@ -24,7 +29,7 @@ interface CreateCWUProposalParams {
   status: CreateCWUProposalStatus;
 }
 
-interface UpdateCWUProposalParams extends Partial<Omit<CWUProposal, 'createdBy' | 'updatedBy' | 'opportunity' | 'proponent'>> {
+export interface UpdateCWUProposalParams extends Partial<Omit<CWUProposal, 'createdBy' | 'updatedBy' | 'opportunity' | 'proponent'>> {
   createdBy?: Id;
   updatedBy?: Id;
   proponent: UpdateProponentRequestBody;
@@ -440,6 +445,8 @@ export const createCWUProposal = tryDb<[CreateCWUProposalParams, AuthenticatedSe
     await createCWUProposalAttachments(trx, rootRecord.id, attachments);
 
     const dbResult = await readOneCWUProposal(trx, rootRecord.id, session);
+    Logger.logObjectChange(logger, 'CWU proposal created', dbResult.value, session)
+
     if (isInvalid(dbResult) || !dbResult.value) {
       throw new Error('unable to create proposal');
     }
@@ -449,7 +456,7 @@ export const createCWUProposal = tryDb<[CreateCWUProposalParams, AuthenticatedSe
 
 export const updateCWUProposal = tryDb<[UpdateCWUProposalParams, AuthenticatedSession], CWUProposal>(async (connection, proposal, session) => {
   const now = new Date();
-  const { attachments, proponent, ...restOfProposal } = proposal;
+  const { attachments, proponent, status, ...restOfProposal } = proposal;
   let proponentIndividualId: Id | null = null;
   return valid(await connection.transaction(async trx => {
     const proposalResult = await connection('cwuProposals')
@@ -487,6 +494,7 @@ export const updateCWUProposal = tryDb<[UpdateCWUProposalParams, AuthenticatedSe
         proponentIndividualId = result.id;
       }
     }
+
     // Update proposal
     const [result] = await connection<RawCWUProposal>('cwuProposals')
       .transacting(trx)
@@ -507,9 +515,12 @@ export const updateCWUProposal = tryDb<[UpdateCWUProposalParams, AuthenticatedSe
     await createCWUProposalAttachments(trx, result.id, attachments || []);
 
     const dbResult = await readOneCWUProposal(trx, result.id, session);
+    Logger.logObjectChange(logger, 'CWU proposal updated', dbResult.value, session)
     if (isInvalid(dbResult) || !dbResult.value) {
       throw new Error('unable to update proposal');
     }
+    
+    //logCh('CWU proposal updated', dbResult.value, session)
     return dbResult.value;
   }));
 });
@@ -546,6 +557,7 @@ export const updateCWUProposalStatus = tryDb<[Id, CWUProposalStatus, string, Aut
       throw new Error('unable to update proposal');
     }
 
+    Logger.logObjectChange(logger, 'CWU proposal status updated', dbResult.value, session)
     return dbResult.value;
   }));
 });
@@ -671,7 +683,7 @@ export const awardCWUProposal = tryDb<[Id, string, AuthenticatedSession], CWUPro
     if (isInvalid(dbResult) || !dbResult.value) {
       throw new Error('unable to update proposal');
     }
-
+    Logger.logObjectChange(logger, 'CWU proposal awarded', dbResult.value, session)
     return dbResult.value;
   }));
 });
@@ -686,7 +698,11 @@ export const deleteCWUProposal = tryDb<[Id, Session], CWUProposal>(async (connec
     throw new Error('unable to delete opportunity');
   }
   result.attachments = [];
-  return valid(await rawCWUProposalToCWUProposal(connection, session, result));
+  const isValid = valid(await rawCWUProposalToCWUProposal(connection, session, result));
+  if(isValid.tag === 'valid'){
+    Logger.logObjectChange(logger, 'CWU proposal deleted', result, session as SessionRecord)
+  }
+  return isValid
 });
 
 export const readSubmittedCWUProposalCount = tryDb<[Id], number>(async (connection, opportunity) => {

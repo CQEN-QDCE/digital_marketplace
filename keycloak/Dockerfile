@@ -20,4 +20,9 @@ RUN ./realmconfig.sh "${ROOTURL}" "${GITHUBID}" "${GITHUBSECRET}" "${KEYCLOAKURL
 RUN ls -m -d $PWD/realms/*.json | tr -d '[:space:]' > realmfileslist
 
 USER 1000
-ENTRYPOINT /opt/jboss/tools/docker-entrypoint.sh -b 0.0.0.0 -Dkeycloak.import=$(cat /tmp/realmconfig/realmfileslist)
+ENTRYPOINT /opt/jboss/tools/docker-entrypoint.sh \
+  -b 0.0.0.0 \
+  -Dkeycloak.import=$(ls -m -d $PWD/realms/*.json | tr -d '[:space:]') \
+  -Dkeycloak.migration.action=export \
+  -Dkeycloak.migration.provider=dir \
+  -Dkeycloak.migration.dir=/tmp
